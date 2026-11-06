@@ -1,11 +1,11 @@
 ---
 name: new-frontend-project
-description: 建立符合 housewoo 慣例的 Vue 3 前端專案骨架（Vue + Vite + TypeScript + Tailwind v4 + orval）。當使用者要開新的前端專案、建立管理後台介面、scaffold Vue 應用時使用。API 型別由後端 Swagger 經 orval 產生，後端請使用 new-backend-project skill。
+description: 建立符合標準前端慣例的 Vue 3 前端專案骨架（Vue + Vite + TypeScript + Tailwind v4 + orval）。當使用者要開新的前端專案、建立管理後台介面、scaffold Vue 應用時使用。API 型別由後端 Swagger 經 orval 產生，後端請使用 new-backend-project skill。
 ---
 
 # 建立 Vue 前端專案架構
 
-依照 housewoo 既有的前端慣例，快速建立新的 Vue 專案骨架。
+依照本 skill 定義的前端慣例（見 `references/conventions.md`），快速建立新的 Vue 專案骨架。
 
 作法是**用 `npm create vite` 產生原生骨架，再依慣例改寫**。`templates/` 只放「CLI 產不出來、且屬於架構核心」的檔案。
 
@@ -19,7 +19,7 @@ description: 建立符合 housewoo 慣例的 Vue 3 前端專案骨架（Vue + Vi
 
 用 AskUserQuestion 一次問完：
 
-1. **專案名稱**（小寫連字號，例如 `housewoo-erp-web`）與**輸出目錄**
+1. **專案名稱**（小寫連字號，例如 `order-hub-web`）與**輸出目錄**
 2. **後端 API 位址**（開發用與正式用，寫進 `.env.local` / `.env`）
 3. **選配**（多選）：登入頁與 JWT 流程、多頁籤版面、側邊欄選單權限、Excel 匯出、Docker + nginx
 
@@ -35,7 +35,7 @@ npm i -D orval@latest
 
 **orval 一定要帶 `@latest`**。實測 `npm i -D orval` 會裝到 7.13.2，帶進 15 個弱點（含 11 個 critical）；`orval@latest` 是 8.x，0 弱點。
 
-刻意**不引入 UI 元件庫**。ERP 表單的樣式需求瑣碎，套件的客製成本往往高於自刻。
+刻意**不引入 UI 元件庫**。管理後台表單的樣式需求瑣碎，套件的客製成本往往高於自刻。
 
 ## Step 2：套用設定
 
@@ -81,7 +81,7 @@ export default { plugins: { '@tailwindcss/postcss': {} } }
 
 > **為什麼需要 CLAUDE.md**：Claude Code 與 sub agent 只會自動載入 `CLAUDE.md`，不會讀 `AGENTS.md`。範本的 `CLAUDE.md` 用 `@AGENTS.md` 匯入規則，規則仍只維護 `AGENTS.md` 一份。
 
-`orval.config.ts` 內有 `__PROJECT_KEY__` 佔位符，替換成專案的小寫短名（例如 `housewoo`）。
+`orval.config.ts` 內有 `__PROJECT_KEY__` 佔位符，替換成專案的小寫短名（例如 `orderhub`）。
 
 在 `main.ts` 匯入 `@/assets/css/tailwind.css`。
 

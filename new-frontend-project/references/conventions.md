@@ -12,7 +12,7 @@
 | API | axios + **orval** | 由後端 Swagger 自動產生 |
 | UI 元件庫 | **無** | 全部自刻 + Tailwind |
 
-刻意不引入 UI 元件庫。ERP 表單的樣式需求瑣碎，套件的客製成本往往高於自刻。
+刻意不引入 UI 元件庫。管理後台表單的樣式需求瑣碎，套件的客製成本往往高於自刻。
 
 ## vite.config.ts
 
@@ -66,7 +66,7 @@ v4 會 tree-shake 沒被用到的主題變數 —— 建置產物裡看不到 `-
 
 `--spacing-*` 這類非顏色 token 同樣會產生 utility（`--spacing-sidenav: 260px` → `w-sidenav`）。
 
-**選色時注意色相角度**：primary 與 danger 至少相距 30°，否則在密集的表格操作按鈕裡會分不出來（既有專案踩過這個坑）。狀態色 success / warning / danger / info 彼此也要拉開。
+**選色時注意色相角度**：primary 與 danger 至少相距 30°，否則在密集的表格操作按鈕裡會分不出來。狀態色 success / warning / danger / info 彼此也要拉開。
 
 ## API 層：Swagger 單向驅動
 

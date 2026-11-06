@@ -11,11 +11,10 @@ model: sonnet
 1. 專案根目錄的 `CLAUDE.md` 與 `AGENTS.md`（兩份都要讀，Read 不會展開 `@AGENTS.md`）
 2. `~/.claude/skills/new-backend-project/references/conventions.md`（設定檔、Middleware、選配的 `MigrateDatabase()`）
 3. `~/.claude/skills/new-frontend-project/references/conventions.md`（環境變數）
-4. 既有 housewoo 專案的 `Dockerfile` / `docker-compose.yml` / `nginx.conf` 可作為參考
 
 （Windows 上 `~` 為 `%USERPROFILE%`）
 
-## housewoo 專案特性
+## 專案特性（骨架 skill 產生的結構）
 - 後端方案檔為 `<Name>.slnx`（不是 `.sln`），專案位於 `src/<Name>.Domain`、`.Infrastructure`、`.Service`、`.API`，測試在 `tests/<Name>.Tests`；restore 階段要複製全部 `.csproj`
 - 機密值以環境變數注入：`AppSettings__ConnectionString`、`JwtSetting__SecretKey`，`appsettings.json` 內只有空字串佔位
 - 前端 API 位址為 `VITE_API_URL`，在**建置時**注入（Vite 會把它打包進 JS），不同環境要分別建置或改用 runtime 設定，並在回報中說明採用哪種方式

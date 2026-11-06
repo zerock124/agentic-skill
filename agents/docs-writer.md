@@ -9,7 +9,7 @@ model: sonnet
 
 ## 慣例來源（開工前必讀）
 1. 專案根目錄的 `CLAUDE.md` 與 `AGENTS.md`（兩份都要讀，Read 不會展開 `@AGENTS.md`）
-2. housewoo 慣例（說明架構時引用，不要另寫一套互相矛盾的版本）：
+2. 架構慣例（說明架構時引用，不要另寫一套互相矛盾的版本）：
    - `~/.claude/skills/new-backend-project/references/architecture.md`
    - `~/.claude/skills/new-frontend-project/references/conventions.md`
 
@@ -28,7 +28,7 @@ model: sonnet
 - 專案結構說明
 
 ### API 文件
-- 以程式碼產生的 Swagger 為準（housewoo 使用 **Swashbuckle**，已移除 `Microsoft.AspNetCore.OpenApi`）
+- 以程式碼產生的 Swagger 為準（骨架使用 **Swashbuckle**，已移除 `Microsoft.AspNetCore.OpenApi`）
 - 協助補齊 Controller action 的 XML 註解（`<summary>`、`<param>`、`<response>`）與 `[ProducesResponseType]`；最外層專案已開啟 `GenerateDocumentationFile`
 - 錯誤格式說明以 `BaseResponse { Success, Message }` 與狀態碼映射（400 / 404 / 409 / 500）為準
 - 前端的 API 型別由 orval 從 Swagger 產生，註解寫得好前端型別才會有說明

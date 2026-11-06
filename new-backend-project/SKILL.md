@@ -1,26 +1,29 @@
 ---
 name: new-backend-project
-description: 建立符合 housewoo 架構慣例的 .NET 後端專案骨架（Domain / Infrastructure / Service 四層）。當使用者要開新的後端專案、建立新 API、scaffold .NET 服務時使用。支援 API 模式（前後端分離）與 Web 模式（MVC + Razor，不分離）。分離模式的前端請另外使用 new-frontend-project skill。
+description: 建立符合標準架構慣例的 .NET 後端專案骨架（Domain / Infrastructure / Service 四層）。當使用者要開新的後端專案、建立新 API、scaffold .NET 服務時使用。支援 API 模式（前後端分離）與 Web 模式（MVC + Razor，不分離）。分離模式的前端請另外使用 new-frontend-project skill。
 ---
 
 # 建立 .NET 後端專案架構
 
-依照 housewoo 既有的架構慣例，快速建立新的後端專案骨架。
+依照本 skill 定義的架構慣例（見 `references/`），快速建立新的後端專案骨架。
 
 作法是**用 `dotnet new` 產生原生骨架，再依慣例改寫**，而非整包複製舊專案。`templates/` 只放「CLI 產不出來、且屬於架構核心」的檔案。
 
 ## Step 0：先問清需求
 
-用 AskUserQuestion 一次問完，不要逐題來回：
+第 1 題是自由輸入，先用文字詢問；第 2～5 題用 AskUserQuestion 一次問完（工具上限四題），不要逐題來回：
 
-1. **專案名稱**（PascalCase，例如 `HousewooHub`）與**輸出目錄**
+1. **專案名稱**（PascalCase，例如 `OrderHub`）與**輸出目錄**
 2. **模式**：
    - `API` — `<Name>.API`，回 JSON，供獨立前端呼叫
    - `Web` — `<Name>.Web`，MVC + Razor Views，不分離前後端
-3. **資料庫**：SQL Server（預設）／ PostgreSQL ／ 暫不接
+3. **資料庫**：
+   - `SQL Server（Code First）` — 預設，新資料庫
+   - `SQL Server 既有資料庫（Database First）` — 資料表已存在且由他人維護，流程見 `references/database.md`
+   - `PostgreSQL` ／ `暫不接`
 4. **選配**（多選）：JWT 驗證、Serilog、Swagger、Quartz 排程、Docker、xunit 測試專案
 5. **CancellationToken**：
-   - `不採用` — 與既有 housewoo 專案一致，`IUnitOfWork`、Service、Controller 都不帶 `CancellationToken`
+   - `不採用` — `IUnitOfWork`、Service、Controller 都不帶 `CancellationToken`
    - `採用` — `IUnitOfWork` 加參數並傳給 EF，Service 與 Controller 一路傳遞（客戶端中斷時可提早停止查詢）
 
    這題**不要預設推薦**，兩個選項並列，由使用者決定。
@@ -95,7 +98,8 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 | `GenericRepository.cs` | `src/<Name>.Infrastructure/Implement/` |
 | `PaginationResponse.cs` | `src/<Name>.API/Models/Share/`（API 模式才需要） |
 | `BaseController.cs` | `src/<Name>.API/Controllers/`（API 模式才需要） |
-| `ApiExceptionResponseHelper.cs` | `src/<Name>.API/Helpers/`（API 模式才需要） |
+| `ApiExceptionResponseUtility.cs` | `src/<Name>.API/Utilities/`（API 模式才需要） |
+| `ServiceExceptionUtility.cs` | `src/<Name>.Service/Utilities/` |
 | `AGENTS.md` | 專案根目錄 |
 | `CLAUDE.md` | 專案根目錄（見下方說明） |
 
@@ -105,12 +109,15 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 
 > `IGenericRepository.cs` 與 `GenericRepository.cs` 各自同時含有 UnitOfWork 的介面與實作，複製後請拆成兩個檔案（`IUnitOfWork.cs`、`UnitOfWork.cs`）。`BaseResponse.cs` 同理，內含 `DataResponse<T>`，可留在同檔或拆開。
 
-`GenericRepository.cs` 需要 `Infrastructure/Data/EntityDbContext.cs` 才能編譯，記得一併建立並安裝 EF Core 套件。
+`GenericRepository.cs` 需要 `Infrastructure/Data/EntityDbContext.cs` 才能編譯，記得一併建立並安裝 EF Core 套件。Step 0 選 **Database First** 時，`EntityDbContext` 與 Entity 改由 `references/database.md` 的 scaffold 指令產生，不要手寫。
 
 參考文件：
 
 - `references/architecture.md` — 分層職責、依賴形狀、資料夾配置、命名規則
 - `references/conventions.md` — `Program.cs` 結構、DI 生命週期、回應格式、例外處理、設定檔
+- `references/database.md` — Code First / Database First、Migration 指令、Seed、常見錯誤
+- `references/feature-workflow.md` — 骨架建好後新增功能的流程、驗證位置、必做清單、交付格式
+- `references/integrations.md` — Quartz 排程、外部 API Adapter、Webhook、Excel 匯入、SignalR 進度通知
 - `references/web-mvc.md` — Web 模式專屬（Cookie 驗證、ViewModel、Razor、Tailwind CLI）
 
 ## Step 4：收尾與驗證
@@ -126,14 +133,14 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 
 Web 模式（MVC）不需要另外建前端，樣式設定已含在 `references/web-mvc.md`。
 
-## 不要沿用的既有技術債
+## 常見錯誤寫法（不要採用）
 
-既有的 `housewoo-erp-api` 有兩處問題，新專案**不要複製**：
+以下兩處是常見的錯誤寫法，新專案**不要採用**：
 
-1. **`appsettings.json` 內含明碼資料庫密碼與 JWT SecretKey**。新專案改用 user-secrets（開發）＋ 環境變數（部署），`appsettings.json` 只留空字串佔位。
-2. **`AddSecurity()` 內呼叫 `services.BuildServiceProvider()` 取設定**，會額外建出一個容器、造成 singleton 重複實例化。新專案改用 `IOptions<T>` 或直接傳入已綁定的設定物件。
+1. **`appsettings.json` 內寫明碼資料庫密碼與 JWT SecretKey**。改用 user-secrets（開發）＋ 環境變數（部署），`appsettings.json` 只留空字串佔位。
+2. **`AddSecurity()` 內呼叫 `services.BuildServiceProvider()` 取設定**，會額外建出一個容器、造成 singleton 重複實例化。改用 `IOptions<T>` 或直接傳入已綁定的設定物件。
 
-此外兩處較小的整理，範本已修正，不要改回舊寫法：
+此外兩處範本刻意的寫法，不要改掉：
 
-- 既有的 `GenericRepository` 有一個未宣告在介面上的 `SaveChangesAsync()`。提交應該只走 `IUnitOfWork`，範本已移除。
-- 既有 `BaseController` 的 protected 屬性用 `_currentAccountId` 這種底線前綴命名（C# 慣例上底線只用於私有欄位）。範本改為 `CurrentAccountId`。
+- `GenericRepository` 不提供 `SaveChangesAsync()`。提交只走 `IUnitOfWork`，不要在 repository 上加回。
+- `BaseController` 的 protected 屬性命名為 `CurrentAccountId`，不要用 `_currentAccountId` 這種底線前綴（C# 慣例上底線只用於私有欄位）。

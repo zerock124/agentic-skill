@@ -40,22 +40,27 @@ src/<Name>.Domain/
     <Module>/          CategoryDTO.cs, EditCategoryDTO.cs, SearchCategoryDTO.cs
   Enums/
   Configs/             AppSettingsConfig.cs, JwtSettingConfig.cs
-  Interface/           IGenericRepository.cs, IUnitOfWork.cs
+  Interface/           IGenericRepository.cs, IUnitOfWork.cs, IMomoProvider.cs（外部 API 介面）
+  Exceptions/          ForbiddenException.cs, ExternalApiException.cs（需要時才建）
   Utilities/
 
 src/<Name>.Infrastructure/
   Data/                EntityDbContext.cs, Migrations/
   Implement/           GenericRepository.cs, UnitOfWork.cs
+  Adapters/<Provider>/ MomoAdapter.cs, Contracts/, Mappers/   ← 外部 API，見 integrations.md
   Helpers/
 
 src/<Name>.Service/
-  Interface/           ICategoryService.cs
-  Implement/           CategoryService.cs
+  Interface/           ICategoryService.cs, Orchestration/
+  Implement/           CategoryService.cs, Orchestration/     ← 串接外部 API 的流程協調
   Mappings/            CategoryMapping.cs               ← 與 API 層同名，以 namespace 區分
-  Helpers/             ServiceExceptionHelper.cs
+  Utilities/           ServiceExceptionUtility.cs, ExcelUtility.cs
 
 src/<Name>.API/
   Controllers/         BaseController.cs, CategoryController.cs
+  Jobs/                MomoSyncJob.cs                   ← Quartz 排程（選配）
+  SignalR/             ProgressHub.cs                   ← 即時推播（選配）
+  Constants/           MenuControllers.cs
   Models/
     Share/             PaginationResponse.cs
     <Module>/          CategoryModels.cs                ← 一模組一檔，內含所有 Request/Response
@@ -64,7 +69,7 @@ src/<Name>.API/
                        MiddlewareExtensions.cs, LoggingExtensions.cs
   Filters/             ApiExceptionFilter.cs, ClaimsFilter.cs
   Middlewares/         ApiExceptionHandlingMiddleware.cs
-  Helpers/             ApiExceptionResponseHelper.cs
+  Utilities/           ApiExceptionResponseUtility.cs
 ```
 
 ## 命名規則
@@ -80,8 +85,10 @@ src/<Name>.API/
 | Controller | `<Module>Controller` | `CategoryController` |
 | Controller action | `<動作><Module>`，與 Service 方法同名；路由為 `/<module>/<action>` 全小寫 | `GetCategory` → `GET /category/getcategory`、`CreateCategory` → `POST /category/createcategory` |
 | AutoMapper Profile | `<Module>Mapping : Profile`，API 層與 Service 層各一個同名類別 | `API/Mappings/CategoryMapping.cs`、`Service/Mappings/CategoryMapping.cs` |
+| Helper / Utility | 可注入、有狀態或有相依的類別叫 `<Name>Helper`，放 `Helpers/`，**不使用 static**；static 純函式叫 `<Name>Utility`，放 `Utilities/`；常數放 `Constants/` | `ProgressNotifierHelper`、`ServiceExceptionUtility`、`ExcelUtility`、`MenuControllers` |
+| 外部 API | 介面 `I<Provider>Provider`（Domain）、實作 `<Provider>Adapter`（Infrastructure）、例外 `<Provider>ApiException` | `IMomoProvider`、`MomoAdapter`、`MomoApiException` |
 
-> `Async` 後綴：既有專案的 Service 方法絕大多數不加後綴，新專案沿用。只有 `IUnitOfWork`（`SaveChangesAsync` 等）與包裝 EF / 框架 API 的基礎設施方法保留 `Async`。
+> `Async` 後綴：Service 方法不加後綴。只有 `IUnitOfWork`（`SaveChangesAsync` 等）與包裝 EF / 框架 API 的基礎設施方法保留 `Async`。
 
 ## 新增一個業務模組時要動的檔案
 

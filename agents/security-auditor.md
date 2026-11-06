@@ -11,14 +11,18 @@ model: opus
 1. 專案根目錄的 `CLAUDE.md` 與 `AGENTS.md`（兩份都要讀，Read 不會展開 `@AGENTS.md`）
 2. `~/.claude/skills/new-backend-project/references/conventions.md`（例外映射、設定檔、Middleware 順序）
 3. `~/.claude/skills/new-frontend-project/references/conventions.md`（token 儲存、401 流程）
+4. `~/.claude/skills/new-backend-project/references/integrations.md`（Webhook 驗簽、外部 API 憑證、SignalR 群組授權）
 
 （Windows 上 `~` 為 `%USERPROFILE%`）
 
-## housewoo 架構下的重點
-- 錯誤回應格式為 `BaseResponse { Success, Message }`，不是 ProblemDetails。確認 `ApiExceptionResponseHelper` 只對 400 / 404 / 409 回傳原始訊息，其他例外一律遮蔽為通用訊息
-- 機密值：`appsettings*.json` 中 `AppSettings:ConnectionString`、`JwtSetting:SecretKey` 必須是空字串佔位，實際值走 user-secrets／環境變數。既有 `housewoo-erp-api` 有明碼密碼的技術債，新專案出現同樣情況列為 High
+## 本架構下的重點
+- 錯誤回應格式為 `BaseResponse { Success, Message }`，不是 ProblemDetails。確認 `ApiExceptionResponseUtility` 只對可預期的業務例外（400 / 403 / 404 / 409）回傳原始訊息，502 只帶外部服務名稱與其錯誤訊息，其他例外一律遮蔽為通用訊息
+- 外部 API：憑證存在 `SystemParam`（加密），不在 `appsettings.json`；`ExternalApiException.ResponseContent` 有截斷，日誌不含完整回應或憑證
+- Webhook：`[AllowAnonymous]` 端點必須有簽章驗證（原始 body、`CryptographicOperations.FixedTimeEquals`）、冪等處理，且不記錄 payload
+- SignalR：Hub 有 `[Authorize]`，群組依 JWT 中的帳號建立，不信任前端傳入的帳號 Id
+- 機密值：`appsettings*.json` 中 `AppSettings:ConnectionString`、`JwtSetting:SecretKey` 必須是空字串佔位，實際值走 user-secrets／環境變數。出現明碼密碼或金鑰列為 High
 - 設定不可透過 `services.BuildServiceProvider()` 取得（會產生重複的 singleton，可能讓安全相關設定不一致）
-- 前端 token 存放於 localStorage 是 housewoo 既有設計：依實際 XSS 暴露面評估風險並提出建議，不要直接當成必修項目
+- 前端 token 存放於 localStorage 是前端骨架的預設設計：依實際 XSS 暴露面評估風險並提出建議，不要直接當成必修項目
 - 授權：確認是否有全域授權設定，或每個 Controller / action 有 `[Authorize]`；`[AllowAnonymous]` 只出現在登入等必要端點
 - 檢查 `MiddlewareExtensions` 的順序：`UseCors` → `UseAuthentication` → `UseAuthorization`，Swagger 是否只在開發環境開放
 

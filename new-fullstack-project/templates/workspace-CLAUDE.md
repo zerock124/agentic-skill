@@ -4,7 +4,7 @@
 
 | 目錄 | 內容 | 驗證指令 |
 |---|---|---|
-| `__KEBAB_NAME__-api/` | .NET 10 Web API（housewoo 後端架構） | `dotnet build`、`dotnet test` |
+| `__KEBAB_NAME__-api/` | .NET 10 Web API（四層架構：Domain / Infrastructure / Service / API） | `dotnet build`、`dotnet test` |
 | `__KEBAB_NAME__-web/` | Vue 3 + Vite + TypeScript 前端 | `npm run build`、`npm audit` |
 
 ## 跨 repo 規則

@@ -23,7 +23,7 @@ dotnet add src/<Name>.Web reference src/<Name>.Domain src/<Name>.Infrastructure 
 | Swagger | 需要 | 不需要 |
 | 資料傳遞 | Request/Response Models | ViewModels |
 
-**沒有 `BaseController` / `ApiExceptionResponseHelper` / `PaginationResponse`**，這三個範本在此模式不需要複製。
+**沒有 `BaseController` / `ApiExceptionResponseUtility` / `PaginationResponse`**，這三個範本在此模式不需要複製。
 
 `Models/` 底下放 ViewModel，命名 `<Module>ViewModel` / `<Module>EditViewModel`，職責等同 API 模式的 Request/Response —— 一樣不要讓 Entity 直接進 View。
 

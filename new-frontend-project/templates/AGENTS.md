@@ -36,7 +36,7 @@ PowerShell 5.1 讀取無 BOM 的 UTF-8 檔案時會以系統 ANSI 編碼解讀�
 ## 開發規則
 
 - 樣式主題定義在 `src/assets/css/tailwind.css` 的 `@theme` 區塊（Tailwind v4），不使用 `tailwind.config.js`
-- 選色時 primary 與 danger 的色相至少相距 30°，狀態色之間也要拉開 —— ERP 表格的操作按鈕密集並排，太接近會誤點
+- 選色時 primary 與 danger 的色相至少相距 30°，狀態色之間也要拉開 —— 管理後台表格的操作按鈕密集並排，太接近會誤點
 - `tsconfig` 不要加 `baseUrl`（TypeScript 6 已棄用，會讓 `vue-tsc` 報 `TS5101`），路徑別名只用 `paths`
 - 環境變數必須以 `VITE_` 開頭才會被注入；`.env.local` 不進版控
 - 新增頁面時：`views/<Module>/` 建立清單頁與編輯頁 → `router/index.ts` 加路由（`meta: { title, requiresAuth }`）→ 需要權限控管時補上選單資料。模組命名要與後端 Controller 一致

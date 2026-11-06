@@ -1,9 +1,9 @@
 ---
 name: new-fullstack-project
-description: 依 housewoo 慣例從零建立前後端分離的新專案（.NET 10 Web API + Vue 3 + Vite + TypeScript），並按固定流程派工給 sub agents：需求確認 → architect 規劃 → 後端骨架 → db-specialist → backend-dev → 前端骨架 → frontend-dev → test-engineer → code-reviewer / security-auditor → devops-engineer / docs-writer。當使用者要開新的全端專案、從零開始一套系統時使用。只需要單邊骨架時改用 new-backend-project 或 new-frontend-project。
+description: 依標準架構慣例從零建立前後端分離的新專案（.NET 10 Web API + Vue 3 + Vite + TypeScript），並按固定流程派工給 sub agents：需求確認 → architect 規劃 → 後端骨架 → db-specialist → backend-dev → 前端骨架 → frontend-dev → test-engineer → code-reviewer / security-auditor → devops-engineer / docs-writer。當使用者要開新的全端專案、從零開始一套系統時使用。只需要單邊骨架時改用 new-backend-project 或 new-frontend-project。
 ---
 
-# 建立全端新專案（housewoo 流程）
+# 建立全端新專案
 
 這個 skill 是**總控流程**，不重複骨架細節：後端骨架照 `new-backend-project`，前端骨架照 `new-frontend-project`，這裡負責「順序、派工內容、階段確認點」。
 
@@ -18,7 +18,7 @@ description: 依 housewoo 慣例從零建立前後端分離的新專案（.NET 1
 ## 目錄配置
 
 ```
-<workspace>/                      例：D:\xinyu\housewoo-hub
+<workspace>/                      例：D:\projects\order-hub
   CLAUDE.md                       ← templates/workspace-CLAUDE.md，說明兩個 repo 的關係
   <kebab-name>-api/               ← 後端（new-backend-project，API 模式）
     docs/initial-plan.md          ← architect 計畫定稿
@@ -28,20 +28,31 @@ description: 依 housewoo 慣例從零建立前後端分離的新專案（.NET 1
 
 ## Phase 0：需求確認（主 agent）
 
-合併兩個骨架 skill 的 Step 0，之後執行骨架時不再重問。分兩步：
+合併兩個骨架 skill 的 Step 0，之後執行骨架時不再重問。
+
+**若使用者提供了專案定義檔**（格式見 `templates/project-definition.md`），先讀取它：已填寫的項目直接採用，下面只問空白的部分。使用者沒有定義檔、但需求很多時，可以提議先填這份範本。
+
+其餘依兩步詢問：
 
 **先用文字請使用者提供**（自由輸入，不適合做成選項）：
 
-- 系統名稱：後端 PascalCase（例：`HousewooHub`）、目錄前綴 kebab-case（例：`housewoo-hub`）、workspace 路徑
-- 系統目的、第一批要做的業務模組（建議 1～3 個）、各模組的主要欄位與操作。描述太模糊時再追問一次，不要自行編造業務規則
-- 後端 API 的開發與正式位址（不確定可先留空）
+- 系統名稱：後端 PascalCase（例：`OrderHub`）、目錄前綴 kebab-case（例：`order-hub`）、workspace 路徑
+- 系統目的、主要使用者（內部／外部）、第一批要做的業務模組（建議 1～3 個）、各模組的主要欄位與操作
+- 非 CRUD 功能：排程、外部 API 串接、Webhook、Excel 匯入匯出、即時進度通知（各自的觸發方式與頻率）
+- 部署方式與後端 API 的開發／正式位址（不確定可先留空）
+
+需求的處理原則：
+
+- 描述太模糊時再追問一次，**不要自行編造業務規則**
+- 範圍太大時，引導使用者切出第一階段（MVP），其餘列為「後續擴充」寫進計畫，本次不做
+- 只給了系統名稱時，主動問：給誰用、主要做什麼、需不需要排程或外部串接、是否用 Docker 部署
 
 **再用 AskUserQuestion 一次問完四題**（工具上限為四題）：
 
-1. 資料庫：SQL Server（預設）／ PostgreSQL ／ 暫不接
+1. 資料庫：SQL Server（Code First，預設）／ SQL Server 既有資料庫（Database First）／ PostgreSQL ／ 暫不接
 2. 後端選配（多選）：JWT 驗證、Serilog、Quartz 排程、Docker、xunit 測試專案（Swagger 為必要，orval 依賴它，不列入選項）
 3. 前端選配（多選）：登入頁與 JWT 流程、多頁籤版面、側邊欄選單權限、Excel 匯出、Docker + nginx
-4. CancellationToken：不採用（與既有 housewoo 專案一致）／ 採用（IUnitOfWork、Service、Controller 一路傳遞）。兩個選項並列，**不要標示推薦**
+4. CancellationToken：不採用（IUnitOfWork、Service、Controller 都不帶）／ 採用（IUnitOfWork、Service、Controller 一路傳遞）。兩個選項並列，**不要標示推薦**
 
 ## Phase 1：架構規劃（architect）
 
@@ -99,7 +110,7 @@ dotnet test
 依「test-engineer」範本派工。
 
 - 後端：Service 單元測試（手寫 Fake repository），以及 Repository / UnitOfWork 測試（SQLite in-memory）
-- 前端：housewoo 前端骨架**預設沒有測試框架**。test-engineer 只回報建議，不自行安裝 Vitest；要不要加由使用者決定
+- 前端：前端骨架**預設沒有測試框架**。test-engineer 只回報建議，不自行安裝 Vitest；要不要加由使用者決定
 
 test-engineer 回報的產品 bug，交回 backend-dev / frontend-dev 修正後再跑一次測試。
 

@@ -130,18 +130,30 @@ public class CategoryController(ICategoryService service, IMapper mapper) : Base
 
 - `Middlewares/ApiExceptionHandlingMiddleware.cs` 掛在管線最外層，接住 filter 管不到的例外
 - `Filters/ApiExceptionFilter.cs` 全域 filter，處理 action 內的例外
-- 兩者共用 `Helpers/ApiExceptionResponseHelper.cs` 做狀態碼映射
+- 兩者共用 `Utilities/ApiExceptionResponseUtility.cs` 做狀態碼映射
 
 映射規則：
 
-| 例外 | 狀態碼 | 訊息 |
-|---|---|---|
-| `ArgumentException` | 400 | 原始訊息 |
-| `KeyNotFoundException` | 404 | 原始訊息 |
-| `InvalidOperationException` | 409 | 原始訊息 |
-| 其他 | 500 | 遮蔽為「系統發生錯誤，請稍後再試」 |
+| 例外 | 狀態碼 | 訊息 | 範本預設 |
+|---|---|---|---|
+| `ArgumentException` | 400 | 原始訊息 | ✅ |
+| `ForbiddenException`（`Domain/Exceptions/`） | 403 | 原始訊息 | 需要資料層級權限時才加 |
+| `KeyNotFoundException` | 404 | 原始訊息 | ✅ |
+| `InvalidOperationException` | 409 | 原始訊息 | ✅ |
+| `ExternalApiException`（`Domain/Exceptions/`，抽象基底） | 502 | `<ProviderName>：<ErrorMessage>` | 第一次串接外部 API 時才加，見 `integrations.md` |
+| 其他 | 500 | 遮蔽為「系統發生錯誤，請稍後再試」 | ✅ |
 
-Service 層擲出前三種例外來表達業務錯誤，不要自己回傳錯誤碼。未預期的例外訊息一律遮蔽，避免洩漏內部細節。
+Service 層一律透過 `Service/Utilities/ServiceExceptionUtility` 建立例外，不要自己回傳錯誤碼或失敗旗標：
+
+```csharp
+var entity = repo.Get(x => x.CategoryCode == code && !x.IsDeleted)
+    ?? throw ServiceExceptionUtility.NotFound("查無此分類");
+
+if (repo.GetAll().Any(x => x.CategoryCode == data.CategoryCode && !x.IsDeleted))
+    throw ServiceExceptionUtility.InvalidOperation($"分類代碼 {data.CategoryCode} 已存在");
+```
+
+新增 `ForbiddenException` 時，同步在 `ServiceExceptionUtility` 加 `Forbidden(message)`，並在 `ApiExceptionResponseUtility.Resolve` 加上 403 的映射。未預期的例外訊息一律遮蔽，避免洩漏內部細節。驗證要放在哪一層，見 `feature-workflow.md` 的「驗證要放哪裡」。
 
 ## Middleware 順序
 
@@ -181,7 +193,7 @@ app.UseAuthorization();
 
 綁定到 `Domain/Configs/AppSettingsConfig`，以 **Singleton** 註冊。
 
-**機密值處理**：開發用 `dotnet user-secrets set "AppSettings:ConnectionString" "..."`，部署用環境變數（`AppSettings__ConnectionString`）。不要把明碼密碼寫進 `appsettings.json` —— 這是既有專案的技術債，新專案別複製。
+**機密值處理**：開發用 `dotnet user-secrets set "AppSettings:ConnectionString" "..."`，部署用環境變數（`AppSettings__ConnectionString`）。不要把明碼密碼寫進 `appsettings.json`。
 
 **不要用 `services.BuildServiceProvider()` 取設定**。`AddAppSettings` 回傳已綁定的設定物件，後續 extension 直接以參數接收即可。
 
@@ -195,7 +207,7 @@ public class CategoryService(IGenericRepository<Category> repo, IUnitOfWork uow,
     public async Task UpdateCategory(EditCategoryDTO data)
     {
         var entity = repo.Get(x => x.CategoryCode == data.CategoryCode && !x.IsDeleted)
-            ?? throw new KeyNotFoundException("查無此分類");
+            ?? throw ServiceExceptionUtility.NotFound("查無此分類");
         mapper.Map(data, entity);
         repo.Update(entity);
         await uow.SaveChangesAsync();   // 提交只走 UnitOfWork
@@ -203,7 +215,7 @@ public class CategoryService(IGenericRepository<Category> repo, IUnitOfWork uow,
 }
 ```
 
-Service 方法命名為 `<動作><Module>`，**不加 `Async` 後綴**（與既有專案一致）；`IUnitOfWork` 與包裝 EF / 框架 API 的方法才保留 `Async`。
+Service 方法命名為 `<動作><Module>`，**不加 `Async` 後綴**；`IUnitOfWork` 與包裝 EF / 框架 API 的方法才保留 `Async`。
 
 `IGenericRepository` **沒有** `SaveChangesAsync`，提交一律經 `IUnitOfWork`。這樣同一次請求內跨多個 repository 的變更才會落在同一個交易裡。
 
@@ -211,11 +223,11 @@ Migration 只用 `dotnet ef migrations add <Name>` 產生，**不要手改** mig
 
 ## CancellationToken（建立專案時由使用者決定）
 
-既有專案的 `IUnitOfWork` 與 Service 方法**不帶** `CancellationToken`。新專案在 `new-backend-project` Step 0 詢問使用者，並把結果寫進專案 `CLAUDE.md` 的「CancellationToken」欄位，之後所有 agent 依該欄位行事。
+範本的 `IUnitOfWork` 與 Service 方法預設**不帶** `CancellationToken`。新專案在 `new-backend-project` Step 0 詢問使用者，並把結果寫進專案 `CLAUDE.md` 的「CancellationToken」欄位，之後所有 agent 依該欄位行事。
 
 | 選擇 | 作法 |
 |---|---|
-| **不採用**（與既有專案一致） | 範本維持原樣。Service、Controller 都不帶 `CancellationToken`；審查時不要把「缺少 CancellationToken」當成問題 |
+| **不採用** | 範本維持原樣。Service、Controller 都不帶 `CancellationToken`；審查時不要把「缺少 CancellationToken」當成問題 |
 | **採用** | 依下列規則全面套用，新增的程式碼也要遵守 |
 
 採用時的規則：

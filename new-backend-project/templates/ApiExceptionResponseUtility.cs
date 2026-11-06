@@ -1,13 +1,13 @@
 using __PROJECT_NAME__.Domain.DTOs.Share;
 
-namespace __PROJECT_NAME__.API.Helpers;
+namespace __PROJECT_NAME__.API.Utilities;
 
 /// <summary>
 /// 將可預期的業務例外轉換為一致的 HTTP 錯誤回應。
 /// 由 ApiExceptionFilter 與 ApiExceptionHandlingMiddleware 共用，
 /// 確保兩條路徑產出的錯誤格式完全相同。
 /// </summary>
-public static class ApiExceptionResponseHelper
+public static class ApiExceptionResponseUtility
 {
     /// <summary>
     /// 未預期例外對外顯示的訊息，避免洩漏系統內部細節

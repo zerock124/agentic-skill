@@ -22,12 +22,15 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 
 ```
 ## 任務
-為新系統「{{SYSTEM_NAME}}」做初始架構規劃。目前尚無程式碼，請依 housewoo 慣例規劃，不要引入慣例外的架構或套件。
+為新系統「{{SYSTEM_NAME}}」做初始架構規劃。目前尚無程式碼，請依你的「慣例來源」所列的架構慣例規劃，不要引入慣例外的架構或套件。
 
 ## 需求
 - 系統目的：{{PURPOSE}}
+- 主要使用者：{{USERS}}
 - 第一批業務模組：{{MODULES_WITH_FIELDS_AND_OPERATIONS}}
-- 資料庫：{{DB}}
+- 非 CRUD 功能：{{NON_CRUD}}   ← 排程、外部 API、Webhook、匯入匯出、即時推播；沒有就寫「無」
+- 後續擴充（本次不做，只需在計畫中列出）：{{LATER}}
+- 資料庫：{{DB}}   ← 含策略：Code First / Database First
 - CancellationToken：{{CANCELLATION_TOKEN}}   ← 採用／不採用，API 契約與任務拆解要依此規劃
 - 後端選配：{{BACKEND_OPTIONS}}
 - 前端選配：{{FRONTEND_OPTIONS}}
@@ -43,6 +46,7 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 - API 契約要列出每個 Controller action 的 HTTP 方法、路由、Request / Response 型別與 Data 的欄位
 - 資料模型要列出每個 Entity 的欄位、型別、長度、是否必填、索引、關聯與刪除行為
 - 前端要列出 views 清單與路由
+- 非 CRUD 功能依 {{SKILLS}}\new-backend-project\references\integrations.md 規劃放在哪一層（Job、Adapter、Orchestration、Hub）
 - 「風險與待確認事項」不可省略；需求不足之處列成問題，不要自行假設業務規則
 ```
 
@@ -59,8 +63,10 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 
 ## 注意
 - DbContext：{{API_DIR}}\src\{{Name}}.Infrastructure\Data\EntityDbContext.cs
-- Migration 指令：
+- 資料庫策略：{{DB_STRATEGY}}（Code First / Database First，指令與注意事項見 {{SKILLS}}\new-backend-project\references\database.md）
+- Code First 的 Migration 指令：
   dotnet ef migrations add InitialCreate --project src/{{Name}}.Infrastructure --startup-project src/{{Name}}.API --output-dir Data/Migrations
+- Database First 時改為 scaffold，不產生 Migration
 - {{DB_APPLY_INSTRUCTION}}   ← 例：「不要套用到資料庫」或「可套用到本機 LocalDB：(連線字串由 user-secrets 提供)」
 - 完成後執行 dotnet build（零錯誤零警告）
 ```
@@ -80,7 +86,8 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 {{共用區塊}}
 
 ## 注意
-- 每個模組照 architecture.md 的「新增業務模組要動的 8 個位置」，缺一不可
+- 每個模組照 architecture.md 的「新增業務模組要動的 8 個位置」，缺一不可；完成前逐項核對 {{SKILLS}}\new-backend-project\references\feature-workflow.md 的「必做清單」，並依其「交付格式」回報
+- 非 CRUD 功能（排程、外部 API、匯入、推播）照 {{SKILLS}}\new-backend-project\references\integrations.md 的分層與寫法
 - 新 Service 要在 Extensions/ServiceCollectionExtensions.cs 手動註冊
 - CancellationToken：{{CANCELLATION_TOKEN}}（以專案 CLAUDE.md 為準）
 - 命名：Service 方法與 Controller action 為 <動作><Module>，不加 Async 後綴（見 architecture.md 命名規則）
@@ -143,7 +150,7 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 {{共用區塊}}
 
 ## 重點
-- 是否遵守 housewoo 架構：分層參考方向、型別轉換鏈、回應格式、例外映射、DI 手動註冊
+- 是否遵守架構慣例：分層參考方向、型別轉換鏈、回應格式、例外映射、DI 手動註冊
 - 實作是否與 API 契約一致：
 {{API_CONTRACT_TABLE}}
 ```
@@ -155,7 +162,7 @@ sub agent 看不到主對話。派工前把 `{{...}}` 全部替換成實際內�
 上線前的初版資安審查：{{API_DIR}} 與 {{WEB_DIR}}
 
 ## 背景
-- 驗證方式：{{AUTH}}   ← 例：JWT Bearer，token 存在 localStorage（housewoo 既有設計）
+- 驗證方式：{{AUTH}}   ← 例：JWT Bearer，token 存在 localStorage（前端骨架預設設計）
 - 涉及的敏感資料：{{SENSITIVE_DATA}}
 
 {{共用區塊}}

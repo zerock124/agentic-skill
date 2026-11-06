@@ -5,7 +5,7 @@
 ## 專案資訊
 
 - 對應後端專案：__BACKEND_DIR__（API 型別由其 Swagger 經 orval 產生）
-- 前端慣例：遵循 housewoo 前端慣例（Vue 3 + Vite + TypeScript + Tailwind v4 + vuex + orval，不使用 UI 元件庫）
+- 前端慣例：Vue 3 + Vite + TypeScript + Tailwind v4 + vuex + orval，不使用 UI 元件庫；規則摘要在 `AGENTS.md`，完整說明見：
   - 技術選型、API 層、目錄結構、模組對應：`~/.claude/skills/new-frontend-project/references/conventions.md`
 
 ## 常用指令

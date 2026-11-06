@@ -6,12 +6,12 @@
 
 - 模式：__MODE__（API：前後端分離／Web：MVC + Razor）
 - 對應前端專案：__FRONTEND_DIR__（Web 模式或無前端時刪除此行）
-- 架構慣例：遵循 housewoo 後端架構（Domain / Infrastructure / Service / __OUTER_LAYER__）
+- 架構慣例：四層後端架構（Domain / Infrastructure / Service / __OUTER_LAYER__），規則摘要在 `AGENTS.md`，完整說明見：
   - 分層、資料夾、命名：`~/.claude/skills/new-backend-project/references/architecture.md`
   - Program.cs、DI、回應格式、例外處理、設定檔：`~/.claude/skills/new-backend-project/references/conventions.md`
   - Web 模式專屬：`~/.claude/skills/new-backend-project/references/web-mvc.md`
 - CancellationToken：__CANCELLATION_TOKEN__
-  - 不採用：本專案不使用 `CancellationToken`（與既有 housewoo 專案一致），新程式碼不要加入，審查時不視為問題
+  - 不採用：本專案不使用 `CancellationToken`，新程式碼不要加入，審查時不視為問題
   - 採用：本專案使用 `CancellationToken`。`IUnitOfWork`、Service 方法、Controller action 都要帶 `CancellationToken cancellationToken` 並一路傳遞到 EF 非同步方法，新程式碼必須遵守
 
 ## 常用指令
