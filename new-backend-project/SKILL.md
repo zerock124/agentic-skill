@@ -19,6 +19,11 @@ description: 建立符合 housewoo 架構慣例的 .NET 後端專案骨架（Dom
    - `Web` — `<Name>.Web`，MVC + Razor Views，不分離前後端
 3. **資料庫**：SQL Server（預設）／ PostgreSQL ／ 暫不接
 4. **選配**（多選）：JWT 驗證、Serilog、Swagger、Quartz 排程、Docker、xunit 測試專案
+5. **CancellationToken**：
+   - `不採用` — 與既有 housewoo 專案一致，`IUnitOfWork`、Service、Controller 都不帶 `CancellationToken`
+   - `採用` — `IUnitOfWork` 加參數並傳給 EF，Service 與 Controller 一路傳遞（客戶端中斷時可提早停止查詢）
+
+   這題**不要預設推薦**，兩個選項並列，由使用者決定。
 
 後續步驟一律用 `<Name>` 代表專案名稱。
 
@@ -79,6 +84,7 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 1. 所有 `.csproj` 補上 `<Nullable>enable</Nullable>`、`<ImplicitUsings>enable</ImplicitUsings>`；最外層專案另加 `<GenerateDocumentationFile>true</GenerateDocumentationFile>` 與 `<NoWarn>$(NoWarn);CS1591</NoWarn>`
 2. 從 `templates/` 複製核心檔案，把 `__PROJECT_NAME__` 全部替換成 `<Name>`
 3. 依 `references/conventions.md` 改寫 `Program.cs` 並建立 `Extensions/`
+4. Step 0 選擇**採用 CancellationToken** 時，依 `references/conventions.md` 的「CancellationToken」一節修改複製後的 `IUnitOfWork` / `UnitOfWork`；不採用則維持範本原樣
 
 範本檔落點：
 
@@ -91,6 +97,11 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 | `BaseController.cs` | `src/<Name>.API/Controllers/`（API 模式才需要） |
 | `ApiExceptionResponseHelper.cs` | `src/<Name>.API/Helpers/`（API 模式才需要） |
 | `AGENTS.md` | 專案根目錄 |
+| `CLAUDE.md` | 專案根目錄（見下方說明） |
+
+`CLAUDE.md` 的佔位符替換規則：`__PROJECT_NAME__` → `<Name>`；`__MODE__` → `API` 或 `Web`；`__OUTER_LAYER__` → `API` 或 `Web`；`__FRONTEND_DIR__` → 對應前端專案的相對路徑（Web 模式或尚未決定時刪除該行）；`__CANCELLATION_TOKEN__` → 依 Step 0 的選擇填 `採用` 或 `不採用`，並刪除下方未被選擇的那一行說明。
+
+> **為什麼需要 CLAUDE.md**：Claude Code 與 sub agent 只會自動載入 `CLAUDE.md`，不會讀 `AGENTS.md`。範本的 `CLAUDE.md` 用 `@AGENTS.md` 匯入架構規則，規則仍只維護 `AGENTS.md` 一份（Codex 等其他工具也讀得到）。專案特有的指令、模組清單寫在 `CLAUDE.md`，架構規則寫在 `AGENTS.md`。
 
 > `IGenericRepository.cs` 與 `GenericRepository.cs` 各自同時含有 UnitOfWork 的介面與實作，複製後請拆成兩個檔案（`IUnitOfWork.cs`、`UnitOfWork.cs`）。`BaseResponse.cs` 同理，內含 `DataResponse<T>`，可留在同檔或拆開。
 
@@ -106,11 +117,12 @@ dotnet add src/<Name>.API package Swashbuckle.AspNetCore
 
 1. `dotnet build` 必須零錯誤零警告通過
 2. 產生 `README.md`（含專案結構、啟動方式、環境變數說明）
-3. `git init` 並建立首次 commit — **這一步要先徵得使用者同意再執行**
+3. 確認根目錄有 `CLAUDE.md`（含 `@AGENTS.md` 匯入）且佔位符都已替換：`grep -n "__" CLAUDE.md` 應無結果
+4. `git init` 並建立首次 commit — **這一步要先徵得使用者同意再執行**
 
 ## 接下來
 
-若是**前後端分離**的專案，後端完成後接著用 **`new-frontend-project`** skill 建立 Vue 前端。前端的 API 型別由本專案的 Swagger 產生，所以順序上先做後端。
+若是**前後端分離**的專案，後端完成後接著用 **`new-frontend-project`** skill 建立 Vue 前端。要一次走完前後端與規劃、實作、測試、審查的完整流程，改用 **`new-fullstack-project`**。前端的 API 型別由本專案的 Swagger 產生，所以順序上先做後端。
 
 Web 模式（MVC）不需要另外建前端，樣式設定已含在 `references/web-mvc.md`。
 

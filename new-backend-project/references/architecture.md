@@ -51,7 +51,7 @@ src/<Name>.Infrastructure/
 src/<Name>.Service/
   Interface/           ICategoryService.cs
   Implement/           CategoryService.cs
-  Mappings/            CategoryProfile.cs
+  Mappings/            CategoryMapping.cs               ← 與 API 層同名，以 namespace 區分
   Helpers/             ServiceExceptionHelper.cs
 
 src/<Name>.API/
@@ -74,8 +74,14 @@ src/<Name>.API/
 | Entity | 單數 PascalCase | `Category` |
 | DTO | `<動作><Module>DTO` | `CategoryDTO`、`EditCategoryDTO`、`SearchCategoryDTO` |
 | Service 介面／實作 | `I<Module>Service` / `<Module>Service` | `ICategoryService` / `CategoryService` |
-| API Model | `<Module><動作>Request` / `Response` | `CategoryEditRequest`、`CategoryResponse` |
+| Service 方法 | `<動作><Module>`，**不加 `Async` 後綴**；取單筆可簡寫為 `Get` | `GetCategoryList`、`CreateCategory`、`UpdateCategory`、`DeleteCategory`、`Get` |
+| API Request | `<動作><Module>Request`；清單查詢為 `Get<Module>ListRequest`；Update 繼承 Create | `GetCategoryListRequest`、`CreateCategoryRequest`、`UpdateCategoryRequest : CreateCategoryRequest`、`DeleteCategoryRequest` |
+| API Response | `<Module>Response`（單筆與清單項目共用） | `CategoryResponse` |
 | Controller | `<Module>Controller` | `CategoryController` |
+| Controller action | `<動作><Module>`，與 Service 方法同名；路由為 `/<module>/<action>` 全小寫 | `GetCategory` → `GET /category/getcategory`、`CreateCategory` → `POST /category/createcategory` |
+| AutoMapper Profile | `<Module>Mapping : Profile`，API 層與 Service 層各一個同名類別 | `API/Mappings/CategoryMapping.cs`、`Service/Mappings/CategoryMapping.cs` |
+
+> `Async` 後綴：既有專案的 Service 方法絕大多數不加後綴，新專案沿用。只有 `IUnitOfWork`（`SaveChangesAsync` 等）與包裝 EF / 框架 API 的基礎設施方法保留 `Async`。
 
 ## 新增一個業務模組時要動的檔案
 
@@ -85,9 +91,9 @@ src/<Name>.API/
 2. `Domain/DTOs/<Module>/`（DTO、EditDTO、SearchDTO）
 3. `Service/Interface/I<Module>Service.cs`
 4. `Service/Implement/<Module>Service.cs`
-5. `Service/Mappings/`（Entity ↔ DTO）
+5. `Service/Mappings/<Module>Mapping.cs`（Entity ↔ DTO）
 6. `API/Models/<Module>/<Module>Models.cs`
-7. `API/Controllers/<Module>Controller.cs` + `API/Mappings/`（DTO ↔ Request/Response）
+7. `API/Controllers/<Module>Controller.cs` + `API/Mappings/<Module>Mapping.cs`（DTO ↔ Request/Response）
 8. `Extensions/ServiceCollectionExtensions.cs` 加一行 `AddTransient`
 
 ## 型別對應鏈

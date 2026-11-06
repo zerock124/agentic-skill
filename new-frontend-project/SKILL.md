@@ -75,6 +75,11 @@ export default { plugins: { '@tailwindcss/postcss': {} } }
 | `orval-fetch.ts` | `src/api/` |
 | `tailwind.css` | `src/assets/css/` |
 | `AGENTS.md` | 專案根目錄 |
+| `CLAUDE.md` | 專案根目錄 |
+
+`CLAUDE.md` 的佔位符：`__PROJECT_NAME__` → 專案名稱；`__BACKEND_DIR__` → 對應後端專案的相對路徑（尚未決定時刪除該行）。
+
+> **為什麼需要 CLAUDE.md**：Claude Code 與 sub agent 只會自動載入 `CLAUDE.md`，不會讀 `AGENTS.md`。範本的 `CLAUDE.md` 用 `@AGENTS.md` 匯入規則，規則仍只維護 `AGENTS.md` 一份。
 
 `orval.config.ts` 內有 `__PROJECT_KEY__` 佔位符，替換成專案的小寫短名（例如 `housewoo`）。
 
@@ -112,8 +117,11 @@ src/
 2. `npm audit` 應為 0 弱點
 3. 確認 Tailwind 主題生效：在元件用一個自訂 class（例如 `bg-primary`）建置後，檢查產出的 CSS 是否含 `--color-primary`。v4 會 tree-shake 沒被用到的主題變數，只看 `@theme` 寫對不代表有效
 4. 產生 `README.md`（含啟動方式、環境變數、`generate:api` 用法）
-5. `git init` 並建立首次 commit — **這一步要先徵得使用者同意再執行**
+5. 確認根目錄有 `CLAUDE.md`（含 `@AGENTS.md` 匯入）且佔位符都已替換：`grep -n "__" CLAUDE.md` 應無結果
+6. `git init` 並建立首次 commit — **這一步要先徵得使用者同意再執行**
 
 ## 相關 skill
+
+要一次建立前後端並走完規劃、實作、測試、審查流程，請改用 **`new-fullstack-project`**。
 
 後端請使用 **`new-backend-project`**。前端的 `src/api/services/` 與 `src/api/models/` 都由後端 Swagger 產生，兩者的模組命名要一一對應（`views/Category` ↔ `CategoryController` ↔ `api/services/category.ts`）。

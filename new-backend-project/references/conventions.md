@@ -91,16 +91,40 @@ Controller 回傳一律 `Ok(res)`，不要用 `ActionResult<T>`：
 [Tags("Category")]
 public class CategoryController(ICategoryService service, IMapper mapper) : BaseController
 {
-    [HttpPost]
+    /// <summary>
+    /// 依分類代碼取得單一分類資料
+    /// </summary>
+    /// <param name="categoryCode">分類代碼。</param>
+    [HttpGet]
     [ProducesResponseType(typeof(DataResponse<CategoryResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Edit(CategoryEditRequest request)
+    public async Task<IActionResult> GetCategory([FromQuery] string categoryCode)
     {
-        var dto = mapper.Map<EditCategoryDTO>(request);
-        var result = await service.EditAsync(dto);
-        return Ok(new DataResponse<CategoryResponse> { Data = mapper.Map<CategoryResponse>(result) });
+        var res = new DataResponse<CategoryResponse>();
+        var category = await service.Get(categoryCode);
+        res.Data = mapper.Map<CategoryResponse>(category);
+        res.Success = category != null;
+        return Ok(res);
+    }
+
+    /// <summary>
+    /// 編輯分類
+    /// </summary>
+    /// <param name="data">請求資料。</param>
+    [HttpPost]
+    [ProducesResponseType(typeof(BaseResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> UpdateCategory([FromBody] UpdateCategoryRequest data)
+    {
+        var res = new BaseResponse();
+        await service.UpdateCategory(mapper.Map<EditCategoryDTO>(data));
+        res.Success = true;
+        return Ok(res);
     }
 }
 ```
+
+- action 名稱與 Service 方法同名（`<動作><Module>`），路由由 `[Route("[controller]/[action]")]` + 小寫 URL 產生：`GET /category/getcategory`、`POST /category/updatecategory`
+- 查詢用 `[HttpGet]` + `[FromQuery]`，新增／修改／刪除用 `[HttpPost]` + `[FromBody]`，上傳用 `[FromForm]`；不使用 PUT / DELETE
+- 新增、修改、刪除通常回 `BaseResponse`；查詢單筆回 `DataResponse<T>`；分頁清單回 `PaginationResponse<T>`
 
 ## 例外處理：雙保險 + 集中映射
 
@@ -166,20 +190,45 @@ app.UseAuthorization();
 EF Core（無 Dapper）。Service 直接注入泛型 repository，不做 per-entity repository：
 
 ```csharp
-public class CategoryService(IGenericRepository<Category> repo, IUnitOfWork uow) : ICategoryService
+public class CategoryService(IGenericRepository<Category> repo, IUnitOfWork uow, IMapper mapper) : ICategoryService
 {
-    public async Task<CategoryDTO> EditAsync(EditCategoryDTO dto)
+    public async Task UpdateCategory(EditCategoryDTO data)
     {
-        var entity = repo.Get(x => x.Id == dto.Id)
+        var entity = repo.Get(x => x.CategoryCode == data.CategoryCode && !x.IsDeleted)
             ?? throw new KeyNotFoundException("查無此分類");
-        // ...修改 entity...
+        mapper.Map(data, entity);
         repo.Update(entity);
         await uow.SaveChangesAsync();   // 提交只走 UnitOfWork
-        return mapper.Map<CategoryDTO>(entity);
     }
 }
 ```
 
+Service 方法命名為 `<動作><Module>`，**不加 `Async` 後綴**（與既有專案一致）；`IUnitOfWork` 與包裝 EF / 框架 API 的方法才保留 `Async`。
+
 `IGenericRepository` **沒有** `SaveChangesAsync`，提交一律經 `IUnitOfWork`。這樣同一次請求內跨多個 repository 的變更才會落在同一個交易裡。
 
 Migration 只用 `dotnet ef migrations add <Name>` 產生，**不要手改** migration 檔案。
+
+## CancellationToken（建立專案時由使用者決定）
+
+既有專案的 `IUnitOfWork` 與 Service 方法**不帶** `CancellationToken`。新專案在 `new-backend-project` Step 0 詢問使用者，並把結果寫進專案 `CLAUDE.md` 的「CancellationToken」欄位，之後所有 agent 依該欄位行事。
+
+| 選擇 | 作法 |
+|---|---|
+| **不採用**（與既有專案一致） | 範本維持原樣。Service、Controller 都不帶 `CancellationToken`；審查時不要把「缺少 CancellationToken」當成問題 |
+| **採用** | 依下列規則全面套用，新增的程式碼也要遵守 |
+
+採用時的規則：
+
+1. `IUnitOfWork` / `UnitOfWork` 的四個方法都加上 `CancellationToken cancellationToken = default`，並往下傳給 EF：
+   ```csharp
+   Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+   // 實作
+   public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+       => context.SaveChangesAsync(cancellationToken);
+   ```
+   `BeginTransactionAsync` / `CommitTransactionAsync` / `RollbackTransactionAsync` 同理（`context.Database.BeginTransactionAsync(cancellationToken)`、`_transaction.CommitAsync(cancellationToken)`）
+2. `IGenericRepository<T>` 的方法是同步的，不需要改；`GetAll()` 回傳的 `IQueryable` 在 Service 用 `ToListAsync(cancellationToken)` / `FirstOrDefaultAsync(cancellationToken)` 時傳入
+3. Service 方法最後一個參數加 `CancellationToken cancellationToken = default`
+4. Controller action 加 `CancellationToken cancellationToken` 參數（ASP.NET Core 會自動綁定 `HttpContext.RequestAborted`），一路傳給 Service
+5. 方法命名規則不變（Service 仍不加 `Async` 後綴）
