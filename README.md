@@ -1,88 +1,118 @@
-# 個人 Claude Code Skills
+# 個人 AI 開發 Skills
 
-存放我使用的 Claude Code 個人通用規範、skill 與 sub agent 定義，讓每個新專案從第一天起就遵循同一套 housewoo 架構慣例。
+存放我使用的個人通用規範、skill 與 sub agent 定義，讓每個新專案從第一天起就遵循同一套架構慣例。
 
-**本 repo 是唯一的正本**。`~/.claude/` 底下的檔案是從這裡複製過去的安裝版本，修改時請改這裡再重新安裝（見[維護方式](#維護方式)）。
+Skill 採用 Agent Skills 格式（資料夾內含 `SKILL.md`），Claude Code、OpenAI Codex、Gemini CLI、GitHub Copilot 都能讀取。各工具的支援程度不同，見[已知限制](#已知限制)。
+
+**本 repo 是唯一的正本**。安裝位置的檔案都是從這裡複製過去的，修改時請改這裡再重新複製（見[維護方式](#維護方式)）。
 
 ## 內容
 
 ```
 skills/
   README.md
-  global/CLAUDE.md            個人通用規範           → 安裝到 ~/.claude/CLAUDE.md
-  agents/                     sub agent 定義（9 個）→ 安裝到 ~/.claude/agents/
-  new-fullstack-project/      全端新專案總控流程      → 安裝到 ~/.claude/skills/
-  new-backend-project/        .NET 後端骨架           → 安裝到 ~/.claude/skills/
-  new-frontend-project/       Vue 前端骨架            → 安裝到 ~/.claude/skills/
-  dotnet-ddd-architecture/    舊版 DDD 架構 skill（未安裝，見文末說明）
+  global/CLAUDE.md            個人通用規範
+  agents/                     sub agent 定義（9 個，Claude Code 格式）
+  new-fullstack-project/      全端新專案總控流程
+  new-backend-project/        .NET 後端骨架
+  new-frontend-project/       Vue 前端骨架
 ```
 
 | Skill | 用途 | 什麼時候用 |
 |---|---|---|
 | `new-fullstack-project` | 依固定流程派工給 sub agents，從需求確認一路做到測試、審查、文件 | 從零開始一套前後端分離的系統 |
-| `new-backend-project` | 用 `dotnet new` 產生骨架，再套用 housewoo 四層架構 | 只要後端，或 MVC + Razor 不分離的專案 |
+| `new-backend-project` | 用 `dotnet new` 產生骨架，再套用四層架構 | 只要後端，或 MVC + Razor 不分離的專案 |
 | `new-frontend-project` | 用 `npm create vite` 產生骨架，再套用 Tailwind v4、vuex、orval | 只要前端，後端已存在 |
 
-## 安裝位置
+## 安裝
 
-| 來源 | 安裝到 | 效果 |
-|---|---|---|
-| `global/CLAUDE.md` | `~/.claude/CLAUDE.md` | 每個 session 都會載入的個人通用規範（溝通語言、變更原則、編碼、安全、驗證、Git、技術偏好）。專案的 `CLAUDE.md` 優先於它 |
-| `new-*-project/` | `~/.claude/skills/<skill 名稱>/` | 在**任何目錄**開 Claude Code 都能使用 |
-| `agents/*.md` | `~/.claude/agents/` | 所有專案共用；個別專案可在 `<專案>/.claude/agents/` 放同名檔案覆蓋 |
+安裝方式就是**把檔案複製到所使用工具的資料夾**，不需要執行任何指令。用檔案總管或任何習慣的方式複製即可。
 
-> Windows 上 `~` 為 `%USERPROFILE%`，例如 `C:\Users\<user>\.claude\`。
->
-> **不要**把這些 skill 放到個別專案的 `.claude/skills/`。專案層級的同名 skill 會蓋過使用者層級的版本，而且很容易變成沒有同步的舊版。
+> `~` 代表使用者家目錄。Windows 為 `%USERPROFILE%`，例如 `C:\Users\<user>\`；macOS / Linux 為 `/Users/<user>/` 或 `/home/<user>/`。資料夾不存在時自行建立。
 
-### 安裝／更新指令
+### 1. Skills
 
-PowerShell（在本 repo 根目錄執行）：
+把 `new-backend-project/`、`new-frontend-project/`、`new-fullstack-project/` 三個資料夾**整個**複製到下表的位置（包含裡面的 `references/` 與 `templates/`，不要只複製 `SKILL.md`）。
 
-```powershell
-$claude = Join-Path $env:USERPROFILE '.claude'
+| 工具 | 複製到 |
+|---|---|
+| Claude Code | `~/.claude/skills/` |
+| OpenAI Codex | `~/.agents/skills/` |
+| Gemini CLI | `~/.gemini/skills/` 或 `~/.agents/skills/` |
+| GitHub Copilot | `~/.copilot/skills/`（也會讀 `~/.claude/skills/`、`~/.agents/skills/`） |
 
-# Skills（整個資料夾覆蓋，避免殘留已刪除的檔案）
-foreach ($s in 'new-backend-project', 'new-frontend-project', 'new-fullstack-project') {
-    $dest = Join-Path $claude "skills\$s"
-    if (Test-Path $dest) { Remove-Item $dest -Recurse -Force }
-    Copy-Item ".\$s" $dest -Recurse
-}
+複製完成後的結構應為：
 
-# Agents 與全域 CLAUDE.md（先備份現有版本）
-$backup = Join-Path $claude ("backups\" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
-New-Item -ItemType Directory -Force (Join-Path $backup 'agents'), (Join-Path $claude 'agents') | Out-Null
-Copy-Item (Join-Path $claude 'agents\*.md') (Join-Path $backup 'agents') -ErrorAction SilentlyContinue
-if (Test-Path (Join-Path $claude 'CLAUDE.md')) { Copy-Item (Join-Path $claude 'CLAUDE.md') $backup }
-Copy-Item '.\agents\*.md' (Join-Path $claude 'agents') -Force
-Copy-Item '.\global\CLAUDE.md' (Join-Path $claude 'CLAUDE.md') -Force
+```
+~/.claude/skills/              ← 依工具替換成上表的位置
+  new-backend-project/
+    SKILL.md
+    references/
+    templates/
+  new-frontend-project/
+  new-fullstack-project/
 ```
 
-Git Bash：
+> 同時使用多個工具時，可以只放一份在 `~/.agents/skills/`（Codex、Gemini CLI、Copilot 共用），Claude Code 另外放 `~/.claude/skills/`。
 
-```bash
-for s in new-backend-project new-frontend-project new-fullstack-project; do
-  rm -rf ~/.claude/skills/$s && cp -r "$s" ~/.claude/skills/
-done
-backup=~/.claude/backups/$(date +%Y%m%d-%H%M%S)
-mkdir -p "$backup/agents" ~/.claude/agents
-cp ~/.claude/agents/*.md "$backup/agents/" 2>/dev/null
-[ -f ~/.claude/CLAUDE.md ] && cp ~/.claude/CLAUDE.md "$backup/"
-cp agents/*.md ~/.claude/agents/
-cp global/CLAUDE.md ~/.claude/CLAUDE.md
-```
+### 2. 個人通用規範
 
-安裝後**重新開啟 Claude Code session**，agent 定義與全域 CLAUDE.md 才會生效。可在 Claude Code 輸入 `/agents` 確認清單。
+`global/CLAUDE.md` 是每個 session 都會載入的個人規範（溝通語言、變更原則、編碼、安全、驗證、Git、技術偏好）。依工具複製並改名：
+
+| 工具 | 複製到 |
+|---|---|
+| Claude Code | `~/.claude/CLAUDE.md` |
+| OpenAI Codex | `~/.codex/AGENTS.md` |
+| Gemini CLI | `~/.gemini/GEMINI.md` |
+| GitHub Copilot | 依使用的介面（VS Code、Copilot CLI）設定個人指示，或放進專案的 `.github/copilot-instructions.md` |
+
+目標檔案**已經存在**時，先備份，再決定要覆蓋還是把內容合併進去。專案自己的規範檔（`CLAUDE.md` / `AGENTS.md`）優先於個人規範。
+
+### 3. Sub Agents
+
+`agents/*.md` 是 Claude Code 的 sub agent 格式（frontmatter 含 `name`、`description`、`tools`、`model`）。
+
+| 工具 | 作法 |
+|---|---|
+| Claude Code | 直接複製到 `~/.claude/agents/` |
+| GitHub Copilot | 複製到 `~/.copilot/agents/`，副檔名改為 `.agent.md`；frontmatter 的 `tools`、`model` 依 Copilot 文件調整 |
+| Gemini CLI | 複製到 `~/.gemini/agents/`，並在設定中啟用 subagents；frontmatter 依 Gemini CLI 文件調整 |
+| OpenAI Codex | Codex 的 subagent 是 TOML 格式（`~/.codex/agents/*.toml`），無法直接使用，需要改寫 |
+
+個別專案可在專案內的 agent 資料夾（例如 `<專案>/.claude/agents/`）放同名檔案覆蓋。
+
+### 安裝後
+
+- **重新開啟工具的 session**，skill、agent 與個人規範才會生效
+- Claude Code 可輸入 `/agents` 確認 agent 清單，輸入 `/` 確認 skill 是否出現
+
+### 更新
+
+1. 先**刪除**安裝位置裡舊的 skill 資料夾，再複製新版（直接覆蓋會殘留已刪除的檔案）
+2. agent 與個人規範檔先備份再覆蓋
+3. 重新開啟 session
+
+> **不要**把這些 skill 複製到個別專案的 skill 資料夾（例如 `<專案>/.claude/skills/`）。專案層級的同名 skill 會蓋過使用者層級的版本，而且很容易變成沒有同步的舊版。
+
+### 已知限制
+
+這套 skill 與 agent 是以 Claude Code 為主撰寫的，在其他工具使用時要注意：
+
+- **路徑寫死為 `~/.claude/skills/...`**：agent 的「慣例來源」與產生到新專案的 `CLAUDE.md` 都以這個路徑引用 `references/`。安裝在其他位置時，要讓 AI 改讀實際的安裝路徑
+- **`new-fullstack-project` 依賴 sub agent 派工**：沒有 sub agent 功能的工具無法照流程派工，只能由主 agent 依序執行各階段
+- **提問方式**：skill 中「用 AskUserQuestion 一次問完」是 Claude Code 的工具；其他工具改以一般對話詢問即可
 
 ## 使用方式
 
 ### 建立全端新專案（建議）
 
-在 Claude Code 中直接描述需求即可觸發，或輸入 `/new-fullstack-project`：
+直接描述需求即可觸發（Claude Code 也可輸入 `/new-fullstack-project`）：
 
 ```
 我要開一個新專案，.NET 10 Web API + Vue 3 Vite TypeScript，用來管理……
 ```
+
+需求較多時，可以先複製 `new-fullstack-project/templates/project-definition.md` 填好（基本資訊、技術選項、業務模組、非 CRUD 功能），再把路徑交給 AI：「依 D:\specs\xxx.md 建立新專案」。已填寫的項目會直接採用，只詢問空白的部分。
 
 流程（每個階段結束都會停下來等你確認）：
 
@@ -115,11 +145,19 @@ cp global/CLAUDE.md ~/.claude/CLAUDE.md
 
 ### 只建後端或只建前端
 
-輸入 `/new-backend-project` 或 `/new-frontend-project`，或直接說「建立新的後端 API 專案」。分離模式先建後端，因為前端的 API 型別要從後端 Swagger 產生。
+直接說「建立新的後端 API 專案」（Claude Code 也可輸入 `/new-backend-project` 或 `/new-frontend-project`）。分離模式先建後端，因為前端的 API 型別要從後端 Swagger 產生。
 
 ### 日常開發（專案建好之後）
 
 不需要呼叫 skill。直接描述任務，主 agent 會依任務類型派給對應的 agent，各 agent 會先讀專案的 `CLAUDE.md` 與 `AGENTS.md`。
+
+後端新增功能時，agent 依 `new-backend-project/references/` 的這幾份文件工作：
+
+| 文件 | 內容 |
+|---|---|
+| `feature-workflow.md` | 新增功能的工作順序、功能類型判斷、驗證要放哪一層、**必做清單**、交付格式 |
+| `integrations.md` | Quartz 排程、外部 API Adapter、Webhook、Excel 匯入、SignalR 進度通知的分層與寫法 |
+| `database.md` | Code First / Database First、Migration 指令、Seed、常見錯誤 |
 
 ## Sub Agents
 
@@ -132,7 +170,7 @@ cp global/CLAUDE.md ~/.claude/CLAUDE.md
 | `test-engineer` | xUnit（Fake + SQLite in-memory）；前端已有測試框架時才寫前端測試 | ✅ 只改測試 |
 | `devops-engineer` | Dockerfile、docker-compose、GitHub Actions | ✅ |
 | `docs-writer` | README、ADR、Swagger XML 註解、CHANGELOG | ✅ 只改文件 |
-| `code-reviewer` | 依 housewoo 慣例審查變更 | ❌ |
+| `code-reviewer` | 依架構慣例審查變更 | ❌ |
 | `security-auditor` | 驗證授權、機密值、相依套件弱點 | ❌ |
 
 每個 agent 開工前依序讀取：
@@ -148,10 +186,10 @@ cp global/CLAUDE.md ~/.claude/CLAUDE.md
 
 | 檔案 | 內容 | 為什麼 |
 |---|---|---|
-| `AGENTS.md` | 架構規則、編碼規則（跨工具通用，Codex 等也讀得到） | 規則只維護這一份 |
+| `AGENTS.md` | 架構規則、編碼規則（跨工具通用，Codex、Copilot 等也讀得到） | 規則只維護這一份 |
 | `CLAUDE.md` | 專案資訊、常用指令、驗證指令、**CancellationToken 設定**，並以 `@AGENTS.md` 匯入規則 | Claude Code 與 sub agent 只會自動載入 `CLAUDE.md` |
 
-## housewoo 架構慣例摘要
+## 架構慣例摘要
 
 完整內容在各 skill 的 `references/`，這裡只列重點。
 
@@ -161,7 +199,9 @@ cp global/CLAUDE.md ~/.claude/CLAUDE.md
 - 型別鏈 `Request → DTO → Entity → DTO → Response`，API 層與 Service 層各一個 `<Module>Mapping : Profile`（AutoMapper）
 - 泛型 `IGenericRepository<T>` + `IUnitOfWork`，提交只走 `IUnitOfWork.SaveChangesAsync()`
 - 回應格式 `BaseResponse` / `DataResponse<T>` / `PaginationResponse<T>`，JSON 為 **PascalCase**，Controller 一律 `Ok(res)`
-- 業務錯誤擲 `ArgumentException`(400) / `KeyNotFoundException`(404) / `InvalidOperationException`(409)，其他 500 遮蔽訊息
+- 業務錯誤透過 `ServiceExceptionUtility` 擲 `ArgumentException`(400) / `KeyNotFoundException`(404) / `InvalidOperationException`(409)，需要時加 `ForbiddenException`(403)、`ExternalApiException`(502)，其他 500 遮蔽訊息；不用 DataAnnotations 驗證、不回傳 `bool`
+- static 純函式叫 `<Name>Utility` 放 `Utilities/`；可注入的類別叫 `<Name>Helper` 放 `Helpers/`
+- 非 CRUD：Quartz Job 在 `API/Jobs`、外部 API 為 Domain 介面加 `Infrastructure/Adapters` 實作、流程協調在 `Service/Implement/Orchestration`
 - 路由 `[controller]/[action]` 小寫；查詢 GET + `[FromQuery]`，寫入 POST + `[FromBody]`
 - 命名：Service 方法與 action 為 `<動作><Module>`，**不加 `Async` 後綴**；Request 為 `Get<Module>ListRequest` / `Create<Module>Request` / `Update<Module>Request` / `Delete<Module>Request`，Response 為 `<Module>Response`
 - Service 手動註冊為 Transient，不用組件掃描；機密值走 user-secrets / 環境變數
@@ -179,25 +219,22 @@ cp global/CLAUDE.md ~/.claude/CLAUDE.md
 
 | 項目 | 選項 | 記錄在 |
 |---|---|---|
-| CancellationToken | 不採用（與既有 housewoo 專案一致）／採用（`IUnitOfWork`、Service、Controller 一路傳遞） | 專案 `CLAUDE.md` |
+| CancellationToken | 不採用（`IUnitOfWork`、Service、Controller 都不帶）／採用（`IUnitOfWork`、Service、Controller 一路傳遞） | 專案 `CLAUDE.md` |
 | 模式 | API（前後端分離）／Web（MVC + Razor） | 專案 `CLAUDE.md` |
+| 資料庫策略 | Code First（預設）／Database First（既有資料表） | 專案 `CLAUDE.md` |
 | 資料庫、選配功能 | 依 Step 0 問答 | 計畫與程式碼 |
 
 ## 維護方式
 
 1. 在本 repo 修改 skill、agent 或 `global/CLAUDE.md`
-2. 依[安裝／更新指令](#安裝更新指令)重新安裝到 `~/.claude/`
-3. 重開 Claude Code session 驗證
+2. 依[更新](#更新)步驟重新複製到安裝位置
+3. 重新開啟 session 驗證
 4. commit（Conventional Commits，描述用繁體中文，例如 `docs: 調整 backend-dev 的命名規則`）
 
 修改原則：
 
 - **慣例的正本是 skill 的 `references/`**。agent 只寫重點並指向 references，不要在兩邊各寫一套
-- `global/CLAUDE.md` 只放跨專案、與技術棧無關的通用規範；housewoo 專屬慣例放 skill，專案專屬資訊放專案的 `CLAUDE.md`
+- `global/CLAUDE.md` 只放跨專案、與技術棧無關的通用規範；架構慣例放 skill，專案專屬資訊放專案的 `CLAUDE.md`
 - 優先順序：專案 `CLAUDE.md` > `global/CLAUDE.md` > agent 預設。例如全域規範預設傳遞 `CancellationToken`，但專案 `CLAUDE.md` 寫「不採用」時以專案為準
-- 慣例以既有 housewoo 專案（`housewoo-erp-api` / `housewoo-erp-web`）的現行程式碼為準；文件與程式不一致時，先確認再修正文件
+- skill 與 agent 內容**不可提及特定既有專案或公司名稱**，也不可寫「與既有專案一致」這類需要外部脈絡的說法：新專案的 session 只看得到 skill 與專案自己的檔案，慣例與理由必須在 references 中寫完整
 - 所有檔案為 UTF-8（無 BOM），工作目錄為 CRLF（`core.autocrlf=true`）
-
-## dotnet-ddd-architecture
-
-較早期的 DDD / Clean Architecture skill，與 `new-backend-project` 的用途重疊，但分層與寫法不同。**目前沒有安裝到 `~/.claude/skills/`，也沒有納入這次的統一規範**，新專案請使用 `new-*-project`。是否保留或移除尚未決定。
